@@ -1,342 +1,337 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>気象庁 高解像度降水ナウキャスト</title>
+        <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+        <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+        <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
 
-<head>
-    <meta charset="utf-8">
-    <title>気象庁 高解像度降水ナウキャスト</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <script src='https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js'></script>
-    <link href='https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css' rel='stylesheet' />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
+            #map {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 100%;
+            }
 
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
+            #time_stamp {
+                z-index: 100;
+                position: fixed;
+                right: 50px;
+                top: 5px;
+                color: #ffffff;
+                text-shadow: 2px 2px 2px #000000;
+                font-size: 50px;
+                line-height: 50px;
+                padding: 5px;
+            }
 
-        #time_stamp {
-            z-index: 100;
-            position: fixed;
-            right: 50px;
-            top: 5px;
-            color: #ffffff;
-            text-shadow: 2px 2px 2px #000000;
-            font-size: 50px;
-            line-height: 50px;
-            padding: 5px;
-        }
+            .map-overlay {
+                font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+                position: absolute;
+                width: auto;
+                bottom: 20px;
+                left: 5px;
+                padding: 10px;
+            }
 
-        .map-overlay {
-            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-            position: absolute;
-            width: auto;
-            bottom: 20px;
-            left: 5px;
-            padding: 10px;
-        }
+            .map-overlay .map-overlay-inner {
+                background-color: #fff;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                border-radius: 3px;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
 
-        .map-overlay .map-overlay-inner {
-            background-color: #fff;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
+            .map-overlay h3 {
+                line-height: 12px;
+                display: block;
+                margin: 0 0 10px;
+            }
 
-        .map-overlay h3 {
-            line-height: 12px;
-            display: block;
-            margin: 0 0 10px;
-        }
+            .map-overlay .legend .bar {
+                height: 10px;
+                width: 100%;
+                background: linear-gradient(to right, #ccffcc, #00ff00);
+            }
 
-        .map-overlay .legend .bar {
-            height: 10px;
-            width: 100%;
-            background: linear-gradient(to right, #CCFFCC, #00ff00);
-        }
+            .map-overlay input {
+                background-color: transparent;
+                display: inline-block;
+                width: 100%;
+                position: relative;
+                margin: 10px 0;
+                /* 上下のマージンを調整 */
+                cursor: ew-resize;
+            }
 
-        .map-overlay input {
-            background-color: transparent;
-            display: inline-block;
-            width: 100%;
-            position: relative;
-            margin: 10px 0;
-            /* 上下のマージンを調整 */
-            cursor: ew-resize;
-        }
+            #legend {
+                position: absolute;
+                bottom: 50px;
+                right: 10px;
+                z-index: 1;
+                background: white;
+                padding: 10px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+        </style>
+    </head>
 
-        #legend {
-            position: absolute;
-            bottom: 50px;
-            right: 10px;
-            z-index: 1;
-            background: white;
-            padding: 10px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-
-<body>
-    <div id="map"></div>
-    <div id="legend">
-        <img id="legend-svg" src="./legend_jp_normal_hrpns.svg" alt="Legend">
-    </div>
-    <div id="time_stamp"></div>
-    <div class="map-overlay top">
-        <div class="map-overlay-inner">
-            <h3>気象庁 高解像度降水ナウキャスト</h3>
-            <button id="play">再生</button>
-            <button id="stop">停止</button>
-            <input id="slider" type="range" min="0" max="0" value="0" class="slider" style="width:100%;">
+    <body>
+        <div id="map"></div>
+        <div id="legend">
+            <img id="legend-svg" src="./legend_jp_normal_hrpns.svg" alt="Legend" />
         </div>
-    </div>
-    <script type="text/javascript">
-        async function fetchAndDisplay() {
-            // 気象庁から最新の高解像度降水ナウキャストの情報を取得
-            const res = await fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json');
+        <div id="time_stamp"></div>
+        <div class="map-overlay top">
+            <div class="map-overlay-inner">
+                <h3>気象庁 高解像度降水ナウキャスト</h3>
+                <button id="play">再生</button>
+                <button id="stop">停止</button>
+                <input id="slider" type="range" min="0" max="0" value="0" class="slider" style="width: 100%" />
+            </div>
+        </div>
+        <script type="text/javascript">
+            async function fetchAndDisplay() {
+                // 気象庁から最新の高解像度降水ナウキャストの情報を取得
+                const res = await fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json');
 
-            // 取得した情報をJSON形式に変換
-            const data_org = await res.json();
+                // 取得した情報をJSON形式に変換
+                const data_org = await res.json();
 
-            // データを反転させる
-            const data = data_org.reverse();
-            console.log(data)
+                // データを反転させる
+                const data = data_org.reverse();
+                console.log(data);
 
-            // 基準となる時間（day_time）と有効時間（valid_time）を取得
-            let day_time = data[0].basetime;
-            let valid_time = data[0].validtime;
-            console.log(day_time)
-            console.log(valid_time)
+                // 基準となる時間（day_time）と有効時間（valid_time）を取得
+                let day_time = data[0].basetime;
+                let valid_time = data[0].validtime;
+                console.log(day_time);
+                console.log(valid_time);
 
-            // UTC日時を取得
-            const utcDatetime = moment.utc(data[0].validtime, "YYYYMMDDHHmmss");
+                // UTC日時を取得
+                const utcDatetime = moment.utc(data[0].validtime, 'YYYYMMDDHHmmss');
 
-            // UTC日時をJSTに変換
-            const jstDatetime = utcDatetime.tz('Asia/Tokyo');
+                // UTC日時をJSTに変換
+                const jstDatetime = utcDatetime.tz('Asia/Tokyo');
 
-            // 年月日時分を取得
-            const year = jstDatetime.format('YYYY');
-            const month = jstDatetime.format('MM');
-            const day = jstDatetime.format('DD');
-            const jikoku_h = jstDatetime.format('HH');
-            const jikoku_m = jstDatetime.format('mm');
+                // 年月日時分を取得
+                const year = jstDatetime.format('YYYY');
+                const month = jstDatetime.format('MM');
+                const day = jstDatetime.format('DD');
+                const jikoku_h = jstDatetime.format('HH');
+                const jikoku_m = jstDatetime.format('mm');
 
-            // 年月日時分を画面に表示
-            document.getElementById('time_stamp').innerHTML = year + "年" + month + "月" + day + "日" + jikoku_h + "時" + jikoku_m + "分";
+                // 年月日時分を画面に表示
+                document.getElementById('time_stamp').innerHTML = year + '年' + month + '月' + day + '日' + jikoku_h + '時' + jikoku_m + '分';
 
-            // 地図のスタイルを定義
-            const style = {
-                // 地図のバージョンとソースを定義
-                "version": 8,
-                "sources": {
-                    // USGS画像ソース
-                    "usgs-image": {
-                        "type": "raster",
-                        "tiles": [
-                            "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}?blankTile=false"
-                        ],
-                        "tileSize": 256,
-                        "minzoom": 2,
-                        "maxzoom": 8,
-                        "attribution": "<a href='https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer'>USGSImagery Only</a> "
-                    }
-                },
-                // USGS画像レイヤ
-                "layers": [
-                    {
-                        "id": "usgs-image",
-                        "type": "raster",
-                        "source": "usgs-image",
-                        "minzoom": 2,
-                        "maxzoom": 18,
-                    }
-                ]
-            };
+                // 地図のスタイルを定義
+                const style = {
+                    // 地図のバージョンとソースを定義
+                    version: 8,
+                    sources: {
+                        // USGS画像ソース
+                        'usgs-image': {
+                            type: 'raster',
+                            tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}?blankTile=false'],
+                            tileSize: 256,
+                            minzoom: 2,
+                            maxzoom: 8,
+                            attribution: "<a href='https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer'>USGSImagery Only</a> ",
+                        },
+                    },
+                    // USGS画像レイヤ
+                    layers: [
+                        {
+                            id: 'usgs-image',
+                            type: 'raster',
+                            source: 'usgs-image',
+                            minzoom: 2,
+                            maxzoom: 18,
+                        },
+                    ],
+                };
 
-            // マップの初期化          
-            const map = new maplibregl.Map({
-                container: 'map',
-                style: style,
-                center: [138.996, 36.833],
-                zoom: 6.69,
-                pitch: 0,
-                bearing: 0,
-                hash: true,
-                attributionControl: false
-            });
+                // マップの初期化
+                const map = new maplibregl.Map({
+                    container: 'map',
+                    style: style,
+                    center: [138.996, 36.833],
+                    zoom: 6.69,
+                    pitch: 0,
+                    bearing: 0,
+                    hash: true,
+                    attributionControl: false,
+                });
 
-            map.painter.context.extTextureFilterAnisotropic = null
+                map.painter.context.extTextureFilterAnisotropic = null;
 
-            // ズーム・回転
-            map.addControl(new maplibregl.NavigationControl());
+                // ズーム・回転
+                map.addControl(new maplibregl.NavigationControl());
 
-            // フルスクリーンモードのオンオフ
-            map.addControl(new maplibregl.FullscreenControl());
+                // フルスクリーンモードのオンオフ
+                map.addControl(new maplibregl.FullscreenControl());
 
-            // 現在位置表示
-            map.addControl(new maplibregl.GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: false
-                },
-                fitBoundsOptions: { maxZoom: 18 },
-                trackUserLocation: true,
-                showUserLocation: true
-            }));
+                // 現在位置表示
+                map.addControl(
+                    new maplibregl.GeolocateControl({
+                        positionOptions: {
+                            enableHighAccuracy: false,
+                        },
+                        fitBoundsOptions: { maxZoom: 18 },
+                        trackUserLocation: true,
+                        showUserLocation: true,
+                    })
+                );
 
-            // スケール表示
-            map.addControl(new maplibregl.ScaleControl({
-                maxWidth: 200,
-                unit: 'metric'
-            }));
+                // スケール表示
+                map.addControl(
+                    new maplibregl.ScaleControl({
+                        maxWidth: 200,
+                        unit: 'metric',
+                    })
+                );
 
-            // Attributionを折りたたみ表示
-            map.addControl(new maplibregl.AttributionControl({
-                compact: true
-            }));
+                // Attributionを折りたたみ表示
+                map.addControl(
+                    new maplibregl.AttributionControl({
+                        compact: true,
+                    })
+                );
 
-            // マップをロード
-            map.on('load', () => {
-                data.forEach((item, index) => {
-                    const day_time = item.basetime;
-                    const valid_time = item.validtime;
+                // マップをロード
+                map.on('load', () => {
+                    data.forEach((item, index) => {
+                        const day_time = item.basetime;
+                        const valid_time = item.validtime;
 
-                    // 各時刻のソースを追加
-                    map.addSource(`jma-nowc-${index}`, {
-                        "type": "raster",
-                        "tiles": [
-                            `https://www.jma.go.jp/bosai/jmatile/data/nowc/${day_time}/none/${valid_time}/surf/hrpns/{z}/{x}/{y}.png`
-                        ],
-                        "tileSize": 512,
-                        "minzoom": 2,
-                        "maxzoom": 12,
-                        "attribution": "<a href='https://www.jma.go.jp/jma/kishou/know/kurashi/highres_nowcast.html'>気象庁 高解像度降水ナウキャスト</a>"
+                        // 各時刻のソースを追加
+                        map.addSource(`jma-nowc-${index}`, {
+                            type: 'raster',
+                            tiles: [`https://www.jma.go.jp/bosai/jmatile/data/nowc/${day_time}/none/${valid_time}/surf/hrpns/{z}/{x}/{y}.png`],
+                            tileSize: 512,
+                            minzoom: 2,
+                            maxzoom: 12,
+                            attribution: "<a href='https://www.jma.go.jp/jma/kishou/know/kurashi/highres_nowcast.html'>気象庁 高解像度降水ナウキャスト</a>",
+                        });
+
+                        // 各時刻のレイヤを追加
+                        if (index === 0) {
+                            map.addLayer({
+                                id: `jma-nowc-${index}`,
+                                type: 'raster',
+                                source: `jma-nowc-${index}`,
+                                minzoom: 2,
+                                maxzoom: 12,
+                                layout: {
+                                    visibility: 'visible',
+                                },
+                                paint: {
+                                    'raster-opacity': 0.8,
+                                },
+                            });
+                        } else {
+                            map.addLayer({
+                                id: `jma-nowc-${index}`,
+                                type: 'raster',
+                                source: `jma-nowc-${index}`,
+                                minzoom: 2,
+                                maxzoom: 8,
+                                layout: {
+                                    visibility: 'visible',
+                                },
+                                paint: {
+                                    'raster-opacity': 0,
+                                },
+                            });
+                        }
                     });
 
-                    // 各時刻のレイヤを追加
-                    if (index === 0) {
-                        map.addLayer({
-                            "id": `jma-nowc-${index}`,
-                            "type": "raster",
-                            "source": `jma-nowc-${index}`,
-                            "minzoom": 2,
-                            "maxzoom": 12,
-                            "layout": {
-                                "visibility": "visible"
-                            },
-                            "paint": {
-                                "raster-opacity": 0.8
+                    // スライダーの初期設定
+                    const slider = document.getElementById('slider');
+                    slider.max = data.length - 1;
+                    console.log('Slider max value: ' + slider.max);
+
+                    function setVisible(map, layerId, isVisible, options = { performance: false }) {
+                        const layer = map.getLayer(layerId);
+                        if (!layer) return;
+
+                        if (layer.type === 'raster' || layer.type === 'fill' || layer.type === 'circle' || layer.type === 'line') {
+                            if (layer.type === 'raster') {
+                                map.setPaintProperty(layerId, 'raster-opacity-transition', { duration: 0 });
                             }
-                        });
-                    } else {
-                        map.addLayer({
-                            "id": `jma-nowc-${index}`,
-                            "type": "raster",
-                            "source": `jma-nowc-${index}`,
-                            "minzoom": 2,
-                            "maxzoom": 8,
-                            "layout": {
-                                "visibility": "visible"
-                            },
-                            "paint": {
-                                "raster-opacity": 0
-                            }
-                        });
-                    }
-                });
-
-                // スライダーの初期設定
-                const slider = document.getElementById('slider');
-                slider.max = data.length - 1;
-                console.log("Slider max value: " + slider.max);
-
-                function setVisible(map, layerId, isVisible, options = { performance: false }) {
-                    const layer = map.getLayer(layerId);
-                    if (!layer) return;
-
-                    if (layer.type === 'raster' || layer.type === 'fill' || layer.type === 'circle' || layer.type === 'line') {
-                        if (layer.type === 'raster') {
-                            map.setPaintProperty(layerId, 'raster-opacity-transition', { duration: 0 });
+                            let opacity = isVisible ? 0.8 : options.performance ? 0.000000000000000000001 : 0;
+                            map.setPaintProperty(layerId, `${layer.type}-opacity`, opacity);
+                        } else {
+                            map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
                         }
-                        let opacity = isVisible ? 0.8 : (options.performance ? 0.000000000000000000001 : 0);
-                        map.setPaintProperty(layerId, `${layer.type}-opacity`, opacity);
-                    } else {
-                        map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
                     }
-                }
 
-                // スライダーでレイヤの表示・非表示の切り替え
-                slider.addEventListener('input', (event) => {
-                    const index = event.target.value;
+                    // スライダーでレイヤの表示・非表示の切り替え
+                    slider.addEventListener('input', (event) => {
+                        const index = event.target.value;
 
-                    // スライダーの値に基づく新しい時間を取得
-                    day_time = data[index].basetime;
-                    valid_time = data[index].validtime;
+                        // スライダーの値に基づく新しい時間を取得
+                        day_time = data[index].basetime;
+                        valid_time = data[index].validtime;
 
-                    // UTC日時を取得
-                    const utcDatetime = moment.utc(data[index].validtime, "YYYYMMDDHHmmss");
+                        // UTC日時を取得
+                        const utcDatetime = moment.utc(data[index].validtime, 'YYYYMMDDHHmmss');
 
-                    // UTC日時をJSTに変換
-                    const jstDatetime = utcDatetime.tz('Asia/Tokyo');
+                        // UTC日時をJSTに変換
+                        const jstDatetime = utcDatetime.tz('Asia/Tokyo');
 
-                    // 年月日時分を取得
-                    const year = jstDatetime.format('YYYY');
-                    const month = jstDatetime.format('MM');
-                    const day = jstDatetime.format('DD');
-                    const jikoku_h = jstDatetime.format('HH');
-                    const jikoku_m = jstDatetime.format('mm');
+                        // 年月日時分を取得
+                        const year = jstDatetime.format('YYYY');
+                        const month = jstDatetime.format('MM');
+                        const day = jstDatetime.format('DD');
+                        const jikoku_h = jstDatetime.format('HH');
+                        const jikoku_m = jstDatetime.format('mm');
 
-                    // 新しい時間を表示
-                    document.getElementById('time_stamp').innerHTML = year + "年" + month + "月" + day + "日" + jikoku_h + "時" + jikoku_m + "分";
+                        // 新しい時間を表示
+                        document.getElementById('time_stamp').innerHTML = year + '年' + month + '月' + day + '日' + jikoku_h + '時' + jikoku_m + '分';
 
-                    // 全レイヤーを非表示にする
-                    data.forEach((_, idx) => {
-                        // map.setLayoutProperty(`jma-nowc-${idx}`, 'visibility', 'none');
-                        setVisible(map, `jma-nowc-${idx}`, false);
+                        // 全レイヤーを非表示にする
+                        data.forEach((_, idx) => {
+                            // map.setLayoutProperty(`jma-nowc-${idx}`, 'visibility', 'none');
+                            setVisible(map, `jma-nowc-${idx}`, false);
+                        });
+
+                        // 選択されたレイヤーを表示
+                        // map.setLayoutProperty(`jma-nowc-${index}`, 'visibility', 'visible');
+                        setVisible(map, `jma-nowc-${index}`, true);
+
+                        map.painter.context.extTextureFilterAnisotropic = null;
                     });
 
-                    // 選択されたレイヤーを表示
-                    // map.setLayoutProperty(`jma-nowc-${index}`, 'visibility', 'visible');
-                    setVisible(map, `jma-nowc-${index}`, true);
+                    let intervalId; // インターバルのIDを保持する変数
 
-                    map.painter.context.extTextureFilterAnisotropic = null
+                    document.getElementById('play').addEventListener('click', () => {
+                        clearInterval(intervalId); // 現在のインターバルをクリア
 
+                        intervalId = setInterval(() => {
+                            slider.value = parseInt(slider.value) + 1;
+                            if (parseInt(slider.value) >= parseInt(slider.max)) {
+                                slider.value = 0;
+                            }
+                            slider.dispatchEvent(new Event('input'));
+                        }, 200); // 0.2秒ごとにスライダーの値を増やす
+                    });
+
+                    document.getElementById('stop').addEventListener('click', () => {
+                        clearInterval(intervalId); // アニメーションを停止
+                    });
                 });
+            }
 
-                let intervalId;  // インターバルのIDを保持する変数
-
-                document.getElementById('play').addEventListener('click', () => {
-                    clearInterval(intervalId);  // 現在のインターバルをクリア
-
-                    intervalId = setInterval(() => {
-                        slider.value = parseInt(slider.value) + 1;
-                        if (parseInt(slider.value) >= parseInt(slider.max)) {
-                            slider.value = 0;
-                        }
-                        slider.dispatchEvent(new Event('input'));
-                    }, 200); // 0.2秒ごとにスライダーの値を増やす
-                });
-
-                document.getElementById('stop').addEventListener('click', () => {
-                    clearInterval(intervalId); // アニメーションを停止
-                });
-
-            });
-
-        }
-
-        fetchAndDisplay();
-
-    </script>
-</body>
-
+            fetchAndDisplay();
+        </script>
+    </body>
 </html>
