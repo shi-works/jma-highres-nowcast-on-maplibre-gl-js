@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="196" viewBox="0, 0, 240, 588">
+    <text x="12" y="48" font-family="Verdana" font-size="36">降水強度</text>
+    <path d="M24 96 h 90 v 60 h -90 z"  fill="rgb(180,000,104)" stroke="none" opacity=".75" />
+    <path d="M24 156 h 90 v 60 h -90 z" fill="rgb(255,040,000)" stroke="none" opacity=".75" />
+    <path d="M24 216 h 90 v 60 h -90 z" fill="rgb(255,153,000)" stroke="none" opacity=".75" />
+    <path d="M24 276 h 90 v 60 h -90 z" fill="rgb(255,245,000)" stroke="none" opacity=".75" />
+    <path d="M24 336 h 90 v 60 h -90 z" fill="rgb(000,065,255)" stroke="none" opacity=".75" />
+    <path d="M24 396 h 90 v 60 h -90 z" fill="rgb(033,140,255)" stroke="none" opacity=".75" />
+    <path d="M24 456 h 90 v 60 h -90 z" fill="rgb(160,210,255)" stroke="none" opacity=".75" />
+    <path d="M24 516 h 90 v 60 h -90 z" fill="rgb(242,242,255)" stroke="none" opacity=".75" />
+    <path d="M24 96 h 90 v 480 h -90 z M24 156 h 90 M24 216 h 90 M24 276 h 90 M24 336 h 90 M24 396 h 90 M24 456 h 90 M24 516 h 90"  fill="none" stroke="#444" stroke-width="2" />
+    <text x="126" y="96"  font-family="Verdana" font-size="32">mm/h</text>
+    <text x="126" y="172" font-family="Verdana" font-size="36">80</text>
+    <text x="126" y="232" font-family="Verdana" font-size="36">50</text>
+    <text x="126" y="292" font-family="Verdana" font-size="36">30</text>
+    <text x="126" y="352" font-family="Verdana" font-size="36">20</text>
+    <text x="126" y="412" font-family="Verdana" font-size="36">10</text>
+    <text x="126" y="472" font-family="Verdana" font-size="36">5</text>
+    <text x="126" y="532" font-family="Verdana" font-size="36">1</text>
+</svg>
